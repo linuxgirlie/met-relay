@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ghana Meteorological Agency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0B1220;--ink-2:#475467;--ink-3:#98A2B3;--line:#EAECF0;--canvas:#F4F6FA;--primary:#1558D6;--warn:#93470B;--warn-bg:#FFF4E0;--amber:#E29512}
+*{box-sizing:border-box}body{margin:0;font:15px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased}
+.nav{background:#fff;border-bottom:1px solid var(--line)}.nav .in{max-width:1080px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:12px}
+.nav b{font-size:17px;font-weight:800;letter-spacing:-.01em}.nav i{width:34px;height:34px;border-radius:10px;background:#0B1220;display:grid;place-items:center}
+.nav span{flex:1}.nav a{color:var(--ink-2);text-decoration:none;font-weight:600;margin-left:20px;font-size:14px}
+.hero{background:#0B1220;color:#fff}.hero .in{max-width:1080px;margin:0 auto;padding:44px 20px}
+.hero h1{font-size:36px;letter-spacing:-.03em;margin:0;font-weight:800}
+.ban{background:var(--amber);color:#2B1800;font-weight:700}.ban .in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center}
+main{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+h2{font-size:20px;letter-spacing:-.02em;margin:0 0 16px;font-weight:800}
+.alert{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:14px;display:grid;grid-template-columns:6px 1fr;gap:18px}
+.alert .bar{background:var(--amber);border-radius:99px}.alert h3{margin:0 0 8px;font-size:18px;letter-spacing:-.01em;color:var(--ink);font-weight:800}
+.alert p{margin:10px 0;color:var(--ink-2)}.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--warn-bg);color:var(--warn)}.tag.n{background:#F2F4F7;color:var(--ink-2)}
+.links a{color:var(--primary);font-weight:700;text-decoration:none;margin-right:16px;font-size:14px}
+.empty{color:var(--ink-3);font-weight:600}
+</style></head><body>
+<div class="nav"><div class="in"><i><svg width="14" height="16" viewBox="0 0 16 18"><path d="M8 0c4 6 7 9.5 7 12.5A7 7 0 0 1 1 12.5C1 9.5 4 6 8 0z" fill="#fff"/></svg></i><b>Ghana Meteorological Agency</b><span></span><a href="#">Forecasts</a><a href="#">Warnings</a><a href="/cap/feed.xml">CAP feed</a></div></div>
+<div id="ban"></div>
+<div class="hero"><div class="in"><h1>Weather warnings</h1></div></div>
+<main><div id="list" class="empty">Loading</div></main>
+<script type="module">
+const esc = (s) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+const when = (iso) => new Date(iso).toUTCString().slice(0, 22);
+async function load() {
+  const [ps, st] = await Promise.all([fetch('/api/products').then((r) => r.json()), fetch('/api/stations').then((r) => r.json())]);
+  const issued = ps.filter((p) => p.state === 'issued');
+  const area = (id) => st.find((s) => s.id === id)?.district || id;
+  document.querySelector('#ban').innerHTML = issued[0] ? `<div class="ban"><div class="in">⚠ ${esc(issued[0].body.headline)}</div></div>` : '';
+  document.querySelector('#list').innerHTML = issued.map((p) => `<div class="alert"><span class="bar"></span><div><h3>${esc(p.body.headline)}</h3>
+    <div class="tags"><span class="tag">${p.body.severity}</span><span class="tag">${p.body.certainty}</span>${p.body.stations.map((s) => `<span class="tag n">${area(s)}</span>`).join('')}</div>
+    <p>${esc(p.body.narrative)}</p><p style="font-size:13px;color:#98A2B3;margin:0 0 10px">Valid ${when(p.body.onset)} to ${when(p.body.expires)} GMT</p>
+    <div class="links"><a href="/data/products/${p.id}/alert.cap.xml">CAP alert</a><a href="/data/products/${p.id}/product.geojson">Map data</a></div></div></div>`).join('') || '<div class="empty">No active warnings</div>';
+}
+load(); new EventSource('/api/events').onmessage = (e) => JSON.parse(e.data).topic.includes('warnings') && load();
+</script></body></html>

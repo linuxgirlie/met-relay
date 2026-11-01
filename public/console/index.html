@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MetRelay Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#F4F6FA;--surface:#FFFFFF;--sunken:#F2F4F7;--ink:#0B1220;--ink-2:#475467;--ink-3:#98A2B3;--line:#EAECF0;--line-2:#D0D5DD;
+  --primary:#1558D6;--primary-soft:#EAF1FF;--nav:#0B1220;--nav-ink:#98A2B3;
+  --ok:#067647;--ok-bg:#E7F8EF;--pend:#1F4E9E;--pend-bg:#EAF1FF;--warn:#93470B;--warn-bg:#FFF4E0;--err:#B42318;--err-bg:#FEEFEE;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;
+  --sans:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased;display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+aside{background:var(--nav);color:#fff;padding:22px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:16px;letter-spacing:-.01em;padding:0 10px 22px}
+.brand i{width:32px;height:32px;border-radius:9px;background:var(--primary);display:grid;place-items:center}
+.brand small{display:block;font-size:11.5px;font-weight:600;color:var(--nav-ink);letter-spacing:.02em}
+nav button{display:flex;align-items:center;gap:11px;width:100%;background:transparent;border:0;color:var(--nav-ink);font:inherit;font-weight:600;font-size:14px;padding:10px 12px;border-radius:9px;cursor:pointer;text-align:left}
+nav button:hover{background:#ffffff0d;color:#fff}nav button.on{background:#ffffff14;color:#fff}
+nav button svg{flex:none;opacity:.9}
+nav .grp{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#667085;padding:16px 12px 6px}
+.live{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#6CE9A6;padding:10px 12px}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px #6CE9A622}
+.wrap{min-width:0}
+.top{display:flex;align-items:center;gap:12px;padding:22px 32px 6px}
+.top h1{font-size:24px;letter-spacing:-.025em;margin:0;font-weight:800}
+main{padding:14px 32px 40px;max-width:1360px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.card h2{font-size:15.5px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.kpi span{font-size:13px;font-weight:600;color:var(--ink-2)}.kpi b{display:block;font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:2px}
+.kpi b small{font-size:16px;color:var(--ink-3);font-weight:700}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:0 12px 10px 0;border-bottom:1px solid var(--line)}
+td{border-bottom:1px solid var(--line);padding:11px 12px 11px 0;vertical-align:middle}
+tr:last-child td{border-bottom:0}tr.click{cursor:pointer}tr.click:hover td{background:var(--sunken)}tr.sel td{background:var(--primary-soft)}
+.sub{color:var(--ink-3);font-size:12.5px;font-weight:500}
+.b{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.ok{color:var(--ok);background:var(--ok-bg)}.fl{color:#28339A;background:#EEF0FD}.er{color:var(--err);background:var(--err-bg)}.pe{color:var(--pend);background:var(--pend-bg)}.nt{color:var(--ink-2);background:var(--sunken)}
+.mono{font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;word-break:break-word}
+pre.code{font:500 12.5px/1.6 var(--mono);background:var(--ink);color:#DCE6F2;padding:14px 16px;border-radius:11px;max-height:340px;overflow:auto;margin:0;white-space:pre-wrap;word-break:break-word}
+.btn{font:inherit;font-weight:700;font-size:14px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}
+.cols{display:grid;grid-template-columns:1.25fr 1fr;gap:18px}.cols.even{grid-template-columns:1fr 1fr}
+label{display:block;font-weight:600;font-size:13px;color:var(--ink-2);margin:12px 0 5px}
+input,select,textarea{width:100%;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.tl{position:relative;padding-left:22px}.tl::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl div{position:relative;padding-bottom:14px}.tl div::before{content:"";position:absolute;left:-21px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2.5px solid var(--primary)}
+.tl b{font-weight:700;text-transform:capitalize}.tl p{margin:2px 0 0;color:var(--ink-2)}
+.gate{background:var(--warn-bg);border-radius:11px;padding:14px 16px;margin-top:14px;color:#5A3500}
+.empty{color:var(--ink-3);font-weight:600;padding:12px 0}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:16px}
+.chips div{display:flex;align-items:center;gap:8px;background:var(--sunken);border-radius:10px;padding:9px 12px;font-weight:600}
+.chips div small{margin-left:auto;color:var(--ink-3);font-weight:600}
+.chips svg{flex:none}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;font-weight:600;color:var(--ink-2);margin:4px 0 8px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:7px}
+.chart{position:relative}.chart svg text{font:500 12px var(--sans);fill:var(--ink-3)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:10px;padding:9px 12px;font-size:12.5px;min-width:170px;display:none;box-shadow:0 10px 24px -8px rgba(0,0,0,.35)}
+.tip .r{display:flex;align-items:center;gap:8px;justify-content:space-between}.tip .r span{display:flex;align-items:center;gap:6px}.tip .r i{width:8px;height:8px;border-radius:50%}
+.bars div{display:grid;grid-template-columns:130px 1fr 60px;align-items:center;gap:10px;margin:8px 0;font-weight:600}
+.bars .t{height:10px;background:var(--sunken);border-radius:99px;overflow:hidden}.bars .t i{display:block;height:100%;border-radius:99px}
+.bars b{text-align:right}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.alertc{display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-bottom:18px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 0 0 4px #EEF0FD}
+.alertc .ai{width:48px;height:48px;border-radius:14px;background:#EEF0FD;display:grid;place-items:center;flex:none}.alertc .t{flex:1}
+.alertc .k{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#3D4FD6}.alertc b{display:block;font-size:17px;margin:2px 0 1px}
+.alertc .v{font:600 30px/1 var(--mono);letter-spacing:-.03em;margin-right:8px}.alertc .v small{font-size:15px;color:var(--ink-2);margin-left:3px}
+.field-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+@media(max-width:1100px){.cols,.cols.even{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){body{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;padding:12px}nav{display:flex;flex-wrap:wrap}.grp,.live{display:none!important}.top,main{padding-left:16px;padding-right:16px}}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand"><i><svg width="14" height="16" viewBox="0 0 16 18"><path d="M8 0c4 6 7 9.5 7 12.5A7 7 0 0 1 1 12.5C1 9.5 4 6 8 0z" fill="#fff"/></svg></i><div>MetRelay<small>Desk</small></div></div>
+  <nav id="nav">
+    <div class="grp">Gather</div>
+    <button data-t="network" class="on"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M5 12a7 7 0 0 1 14 0M2 12a10 10 0 0 1 20 0"/></svg>Network</button>
+    <button data-t="kiamo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 16l20-8-6 12-3-5z"/></svg>KIAMO release</button>
+    <button data-t="clidata"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>CLIDATA</button>
+    <div class="grp">Process</div>
+    <button data-t="work"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 3 6-8 3 4"/></svg>Workbench</button>
+    <div class="grp">Disseminate</div>
+    <button data-t="diss"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11v2a1 1 0 0 0 1 1h2l5 4V6L7 10H5a1 1 0 0 0-1 1zM16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14"/></svg>Products</button>
+    <button data-t="bus"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Message log</button>
+  </nav>
+  <span class="live" id="live">Live</span>
+</aside>
+<div class="wrap"><div class="top"><h1 id="title">Network</h1></div><main id="m"></main></div>
+<script type="module">
+const $ = (s) => document.querySelector(s), m = $('#m');
+const api = (p, b) => fetch(p, b ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) } : {}).then((r) => r.json());
+const esc = (s) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+const hh = (h) => String(h).padStart(2, '0') + ':00';
+const t8 = (iso) => iso.slice(11, 19);
+const TITLES = { network: 'Network', kiamo: 'KIAMO release', clidata: 'CLIDATA', work: 'Forecaster workbench', diss: 'Products', bus: 'Message log' };
+let tab = 'network', stations = await api('/api/stations'), selStn = '23003TDI', selObs = null, lastDraft = null, pendingAlert = null;
+const go = (t) => { tab = t; document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); $('#title').textContent = TITLES[t]; render(); };
+$('#nav').onclick = (e) => { const b = e.target.closest('button'); if (b) go(b.dataset.t); };
+const es = new EventSource('/api/events'); let tmr;
+es.onmessage = (e) => { const t = JSON.parse(e.data).topic; clearTimeout(tmr); tmr = setTimeout(() => (['network', 'kiamo', 'clidata', 'bus'].includes(tab) || (tab === 'work' && t === 'internal/alerts')) && render(), 400); };
+es.onerror = () => ($('#live').textContent = 'Reconnecting'); es.onopen = () => ($('#live').textContent = 'Live');
+const stName = (id) => stations.find((s) => s.id === id)?.name || id;
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+const statusB = (s) => ({ 'in-clidata': '<span class="b ok">✓ In CLIDATA</span>', received: '<span class="b pe">Received</span>' }[s] || `<span class="b pe">${s}</span>`);
+const CH = { climweb: 'ClimWeb', 'cap-feed': 'CAP feed', sms: 'SMS', facebook: 'Facebook', x: 'X', whatsapp: 'WhatsApp', instagram: 'Instagram', youtube: 'YouTube', linkedin: 'LinkedIn', threads: 'Threads', email: 'Email', 'partner-api': 'Partner API' };
+const qcBadges = (fl) => {
+  const n = (f) => fl.filter(f).length, out = [];
+  if (n((x) => x.decision === 'confirmed')) out.push(`<span class="b fl" title="Confirmed by observer">⚑ ${n((x) => x.decision === 'confirmed')}</span>`);
+  if (n((x) => x.decision === 'corrected')) out.push(`<span class="b ok" title="Corrected at the instrument">✓ ${n((x) => x.decision === 'corrected')} fixed</span>`);
+  if (n((x) => x.kind === 'missing')) out.push(`<span class="b pe" title="Reported missing">/ ${n((x) => x.kind === 'missing')}</span>`);
+  if (n((x) => ['time', 'divergence', 'resubmission'].includes(x.kind))) out.push('<span class="b er">! check</span>');
+  return out.join(' ') || '<span class="b ok">Clean</span>';
+};
+const check = '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#067647"/><path d="M4.5 8.2l2.3 2.3 4.7-4.8" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>';
+
+const views = {
+  async network() {
+    const [net, obs, q] = await Promise.all([api('/api/network'), api('/api/obs'), api('/api/kiamo')]);
+    const reporting = net.filter((s) => s.today > 0).length, flags = obs.filter((o) => o.flags.length).length, queued = q.filter((x) => x.state === 'queued').length;
+    m.innerHTML = `<div class="kpis">
+      <div class="kpi"><span>Stations reporting</span><b>${reporting}<small> / ${net.length}</small></b></div>
+      <div class="kpi"><span>Observations today</span><b>${net.reduce((a, s) => a + s.today, 0)}</b></div>
+      <div class="kpi"><span>Flagged at capture</span><b>${flags}</b></div>
+      <div class="kpi"><span>Awaiting KIAMO</span><b>${queued}</b></div></div>
+    <div class="card"><h2>Stations</h2><table><tr><th>Station</th><th>Tier</th><th>Region</th><th>Last report</th><th>Today</th><th>Availability</th></tr>
+    ${net.map((s) => `<tr><td><b>${s.name}</b><div class="sub">${s.wmo ? 'WMO ' + s.wmo : s.id}</div></td><td>${cap(s.tier)}</td><td>${s.region}<div class="sub">${s.district}</div></td>
+      <td>${s.last ? `${s.last.date.slice(5)} · ${hh(s.last.hour)}<div class="sub">received ${t8(s.last.received)}</div>` : '<span class="b er">Silent</span>'}</td><td>${s.today} / ${s.expected}</td>
+      <td>${s.availability == null ? '<span class="b nt">Not due</span>' : `<span class="b ${s.availability >= 80 ? 'ok' : s.availability > 0 ? 'fl' : 'er'}">${s.availability}%</span>`}</td></tr>`).join('')}</table></div>
+    <div class="cols"><div class="card"><h2>Observations</h2><table><tr><th>Station</th><th>Time</th><th>Observer</th><th>QC</th><th>Status</th></tr>
+    ${obs.slice(0, 40).map((o) => `<tr class="click ${o.id === selObs ? 'sel' : ''}" data-o="${o.id}"><td><b>${stName(o.station)}</b></td><td>${o.date.slice(5)} · ${hh(o.hour)}</td><td>${esc(o.observer)}</td>
+      <td>${qcBadges(o.flags)}</td><td>${statusB(o.status)}</td></tr>`).join('') || '<tr><td colspan=5 class="empty">No observations yet</td></tr>'}</table></div>
+    <div class="card" id="cust"><h2>Chain of custody</h2><div class="empty">Select an observation</div></div></div>`;
+    const show = async (id) => {
+      selObs = id; m.querySelectorAll('[data-o]').forEach((tr) => tr.classList.toggle('sel', tr.dataset.o === id));
+      const o = obs.find((x) => x.id === id), c = await api('/api/custody?obs=' + id);
+      $('#cust').innerHTML = `<h2>Chain of custody <span class="b nt">${stName(o.station)} · ${hh(o.hour)}</span></h2><div class="tl">${c.map((e) => `<div><b>${e.stage.replace('-', ' ')}</b> <span class="sub">${t8(e.at)}</span><p>${esc(e.detail)}</p></div>`).join('')}</div>
+        ${o.flags.map((f) => `<div class="gate">⚑ ${esc(f.msg)}</div>`).join('')}
+        <h2 style="margin-top:18px">Record</h2><pre class="code">${esc(JSON.stringify({ ...o.payload, derived_server: o.derived }, null, 1))}</pre>`;
+    };
+    m.querySelectorAll('[data-o]').forEach((tr) => (tr.onclick = () => show(tr.dataset.o)));
+    if (selObs && obs.some((o) => o.id === selObs)) show(selObs);
+  },
+  async kiamo() {
+    const [q, b] = await Promise.all([api('/api/kiamo'), api('/api/gts/bulletins')]);
+    const queued = q.filter((x) => x.state === 'queued');
+    m.innerHTML = `<div class="cols"><div class="card"><h2>Release queue <span class="b fl">${queued.length} waiting</span></h2>
+      <table><tr><th></th><th>Station</th><th>SYNOP</th><th>State</th></tr>${q.slice(0, 60).map((x) => `<tr><td style="width:28px">${x.state === 'queued' ? `<input type="checkbox" class="ck" value="${x.id}" checked style="width:auto">` : ''}</td><td><b>${stName(x.station)}</b></td><td class="mono">${esc(x.synop)}</td>
+      <td>${x.state === 'queued' ? '<span class="b fl">Waiting</span>' : `<span class="b ok">Released</span><div class="sub">${esc(x.releasedBy)} · ${t8(x.released)}</div>`}</td></tr>`).join('') || '<tr><td colspan=4 class="empty">Queue empty</td></tr>'}</table>
+      <div class="field-row" style="margin-top:16px"><div style="flex:1"><label>Duty officer</label><input id="off" value="Mr. Asante, KIAMO duty officer"></div><button class="btn pri" id="rel" ${queued.length ? '' : 'disabled'}>Release ${queued.length} to GTS</button></div></div>
+      <div class="card"><h2>GTS bulletins</h2>${b.map((x) => `<div class="sub" style="margin:0 0 6px">${x.file}</div><pre class="code" style="margin-bottom:14px">${esc(x.text)}</pre>`).join('') || '<div class="empty">None sent yet</div>'}</div></div>`;
+    $('#rel').onclick = async () => { const ids = [...m.querySelectorAll('.ck:checked')].map((c) => c.value); await api('/api/kiamo/release', { ids, officer: $('#off').value }); render(); };
+  },
+  async clidata() {
+    const f = await api('/api/clidata');
+    m.innerHTML = f.map((x) => { const rows = x.text.trim().split('\n').map((l) => l.split(',')); const cols = rows[0].map((h, i) => [h, i]).filter(([, i]) => rows.slice(1).some((r) => r[i] !== ''));
+      return `<div class="card"><h2>${x.file} <span class="b nt">${rows.length - 1} rows</span><span style="flex:1"></span><a class="btn" href="/data/clidata/${x.file}" download>Download CSV</a></h2>
+      <div style="overflow-x:auto"><table style="min-width:900px"><tr>${cols.map(([h]) => `<th>${h}</th>`).join('')}</tr>${rows.slice(1).map((r) => `<tr>${cols.map(([, i]) => `<td class="mono">${esc(r[i])}</td>`).join('')}</tr>`).join('')}</table></div></div>`; }).join('') || '<div class="card"><div class="empty">No rows yet</div></div>';
+  },
+  async work() {
+    m.innerHTML = `<div class="card"><div class="empty">Loading model candidates</div></div>`;
+    const [c, ver, alerts, att] = await Promise.all([api('/api/candidates?station=' + selStn), api('/api/verification'), api('/api/alerts'), api('/api/attention')]);
+    const st = stations.find((s) => s.id === selStn);
+    const COL = { blend: 'var(--s1)', gfs_seamless: 'var(--s2)', ecmwf_ifs025: 'var(--s3)', ecmwf_aifs025_single: 'var(--s4)' };
+    const SHORT = { gfs_seamless: 'GFS', ecmwf_ifs025: 'ECMWF', ecmwf_aifs025_single: 'AIFS (AI)' };
+    const lines = [...c.series.map((s) => ({ id: s.id, label: SHORT[s.id], v: s.t, dash: s.ai })), { id: 'blend', label: 'Blend', v: c.blend, w: 3 }];
+    const W = 600, H = 300, PL = 32, PR = 70, PT = 10, PB = 24, n = c.hours?.length || 48;
+    const all = lines.flatMap((l) => l.v).filter((v) => v != null);
+    const lo = Math.floor(Math.min(...all)) - 1, hi = Math.ceil(Math.max(...all)) + 1;
+    const x = (i) => PL + (i * (W - PL - PR)) / (n - 1), y = (v) => PT + ((hi - v) * (H - PT - PB)) / (hi - lo);
+    const path = (arr) => arr.map((v, i) => (v == null ? '' : `${i && arr[i - 1] != null ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`)).join('');
+    const ticks = []; for (let v = Math.ceil(lo / 2) * 2; v <= hi; v += 2) ticks.push(v);
+    // direct labels at line ends, nudged apart
+    const ends = lines.map((l) => { let i = l.v.length - 1; while (i > 0 && l.v[i] == null) i--; return { ...l, yy: y(l.v[i]) }; }).sort((a, b) => a.yy - b.yy);
+    for (let i = 1; i < ends.length; i++) if (ends[i].yy - ends[i - 1].yy < 14) ends[i].yy = ends[i - 1].yy + 14;
+    const rrMax = Math.max(...c.rr24.map((r) => r.total), 0), spread = Math.max(...c.spread.filter((v) => v != null));
+    const alertCards = alerts.map((a) => `<div class="alertc"><span class="ai"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3D4FD6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4.5 4.5 0 1 1 1-8.9A6 6 0 0 1 19 9a3.5 3.5 0 0 1-1 6.9"/><path d="M9 18l-1 3M13 18l-1 3M17 18l-1 3"/></svg></span><div class="t"><div class="k">Heavy rain, confirmed at the gauge</div><b>${esc(a.msg.split(':')[0])}</b><div class="sub">${esc((a.msg.match(/confirmed by (.+)$/) || [, ''])[1])} · ${t8(a.at)} GMT</div></div><span class="v">${a.value}<small>mm</small></span><button class="btn pri" data-alert="${a.id}" data-st="${a.station}" data-v="${a.value}">Draft warning</button></div>`).join('');
+    const attRows = att.map((a) => `<tr class="click" data-pick="${a.station}"><td><b>${a.name}</b><div class="sub">${a.region}</div></td>${a.models.map((mm) => `<td>${mm.rain.toFixed(1)}</td>`).join('')}<td>${a.tSpread.toFixed(1)} °C</td>
+      <td>${a.verdict === 'agree' ? '<span class="b ok">✓ Models agree</span>' : `<span class="b fl">Your call · ${a.reasons.join(', ')}</span>`}</td></tr>`).join('');
+    m.innerHTML = `${alertCards}<div class="card"><div class="field-row"><div style="min-width:260px"><label style="margin-top:0">Station</label><select id="st">${stations.map((s) => `<option value="${s.id}" ${s.id === selStn ? 'selected' : ''}>${s.name} · ${cap(s.tier)}</option>`).join('')}</select></div>
+      <span class="b ${c.source.includes('live') ? 'ok' : 'fl'}">${esc(c.source)}</span><span style="flex:1"></span><button class="btn" id="rf">Refresh models</button></div></div>
+    <div class="kpis"><div class="kpi"><span>Blend, next 24 h max</span><b>${Math.max(...c.blend.slice(0, 24).filter((v) => v != null)).toFixed(1)}<small> °C</small></b></div>
+      <div class="kpi"><span>Model spread</span><b>${spread.toFixed(1)}<small> °C</small></b></div>
+      <div class="kpi"><span>Rain, next 24 h</span><b>${rrMax.toFixed(0)}<small> mm</small></b></div>
+      <div class="kpi"><span>Verified sources</span><b>${ver.filter((v) => v.candidate).length}<small> / ${ver.length}</small></b></div></div>
+    <div class="cols"><div class="card"><h2>Temperature, next 48 h · ${st.name}</h2>
+      <div class="legend">${lines.map((l) => `<span><i style="border-color:${COL[l.id]};${l.dash ? 'border-top-style:dashed' : ''}"></i>${l.label}</span>`).join('')}</div>
+      <div class="chart" id="chart"><svg viewBox="0 0 ${W} ${H}" width="100%" id="svg">
+        ${ticks.map((v) => `<line x1="${PL}" x2="${W - PR}" y1="${y(v)}" y2="${y(v)}" stroke="#EAECF0"/><text x="0" y="${y(v) + 4}">${v}°</text>`).join('')}
+        ${[0, 12, 24, 36, 47].map((i) => `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${i === 0 ? 'Now' : '+' + i + 'h'}</text>`).join('')}
+        ${lines.map((l) => `<path d="${path(l.v)}" fill="none" stroke="${COL[l.id]}" stroke-width="${l.w || 2}" stroke-linecap="round" stroke-linejoin="round" ${l.dash ? 'stroke-dasharray="6 4"' : ''}/>`).join('')}
+        ${ends.map((l) => `<text x="${W - PR + 8}" y="${l.yy + 4}" style="fill:#475467;font-weight:700">${l.label}</text>`).join('')}
+        <line id="xh" y1="${PT}" y2="${H - PB}" stroke="#98A2B3" stroke-dasharray="3 3" visibility="hidden"/>
+        <rect x="${PL}" y="${PT}" width="${W - PL - PR}" height="${H - PT - PB}" fill="transparent" id="hit"/></svg><div class="tip" id="tip"></div></div></div>
+    <div class="card"><h2>Verification gate</h2>
+      <table><tr><th>Source</th><th>Pairs</th><th>MAE</th><th>Bias</th><th>Gate</th></tr>${ver.map((v) => `<tr><td><b>${v.label.replace(/\s*\(.*\)/, '')}</b>${v.ai ? ' <span class="b pe">AI</span>' : ''}</td><td>${v.n}</td><td>${v.mae == null ? '' : v.mae.toFixed(2) + ' °C'}</td><td>${v.bias == null ? '' : (v.bias > 0 ? '+' : '') + v.bias.toFixed(2)}</td>
+      <td>${v.candidate ? '<span class="b ok">✓ Candidate</span>' : `<span class="b fl" title="${esc(v.reason)}">Withheld</span>`}</td></tr>`).join('')}</table>
+      <h2 style="margin-top:22px">Rain, next 24 h</h2><div class="bars">${c.rr24.map((r) => `<div><span>${SHORT[r.id]}</span><span class="t"><i style="width:${rrMax ? (100 * r.total) / rrMax : 0}%;background:${COL[r.id]}"></i></span><b>${r.total.toFixed(1)} mm</b></div>`).join('')}</div></div></div>
+    <div class="card"><h2>Where your judgment is needed <span class="b nt">next 24 h</span></h2><table><tr><th>Station</th><th>GFS mm</th><th>ECMWF mm</th><th>AIFS mm</th><th>Max temp spread</th><th>Models</th></tr>${attRows}</table></div>
+    <div class="card" id="draftcard"><h2>Draft warning${pendingAlert ? ' <span class="b fl">from observer report</span>' : ''}</h2>
+      <div class="cols even"><div><label style="margin-top:0">Headline</label><input id="hl" value="Heavy rainfall expected over ${st.district}, ${st.region}">
+      <label>Narrative</label><textarea id="nar" rows="4">${pendingAlert ? `${esc(pendingAlert.msg)}. ` : ''}Up to ${rrMax.toFixed(0)} mm of rain is expected in the next 24 hours around ${st.name}. Thunderstorms with gusty winds are possible, with flash flooding in low-lying areas.</textarea></div>
+      <div><div class="grid3"><div><label style="margin-top:0">Severity</label><select id="sev"><option>Minor</option><option selected>Moderate</option><option>Severe</option><option>Extreme</option></select></div>
+      <div><label style="margin-top:0">Certainty</label><select id="cer"><option>Possible</option><option ${pendingAlert ? '' : 'selected'}>Likely</option><option ${pendingAlert ? 'selected' : ''}>Observed</option></select></div><div><label style="margin-top:0">Rain, mm</label><input id="rr" type="number" value="${rrMax.toFixed(0)}"></div></div>
+      <label>Areas</label><select id="ar" multiple size="4">${stations.map((s) => `<option value="${s.id}" ${s.id === selStn ? 'selected' : ''}>${s.name} · ${s.district}</option>`).join('')}</select></div></div>
+      <p style="margin:16px 0 0"><button class="btn pri" id="dr">Create draft</button></p><div id="drout"></div></div>`;
+    // hover layer: crosshair + tooltip
+    const svg = $('#svg'), tip = $('#tip'), xh = $('#xh');
+    $('#hit').onmousemove = (e) => {
+      const r = svg.getBoundingClientRect(), sx = ((e.clientX - r.left) / r.width) * W;
+      const i = Math.max(0, Math.min(n - 1, Math.round(((sx - PL) / (W - PL - PR)) * (n - 1))));
+      xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.setAttribute('visibility', 'visible');
+      tip.innerHTML = `<div style="font-weight:700;margin-bottom:4px">${c.hours[i].slice(5).replace('T', ' ')}:00 GMT</div>${lines.map((l) => `<div class="r"><span><i style="background:${COL[l.id]}"></i>${l.label}</span><b>${l.v[i] == null ? 'n/a' : l.v[i].toFixed(1) + ' °C'}</b></div>`).join('')}`;
+      tip.style.display = 'block';
+      const px = (x(i) / W) * r.width; tip.style.left = (px > r.width * 0.6 ? px - tip.offsetWidth - 14 : px + 14) + 'px'; tip.style.top = '10px';
+    };
+    $('#hit').onmouseleave = () => { tip.style.display = 'none'; xh.setAttribute('visibility', 'hidden'); };
+    $('#st').onchange = (e) => { selStn = e.target.value; pendingAlert = null; render(); };
+    m.querySelectorAll('[data-pick]').forEach((tr) => (tr.onclick = () => { selStn = tr.dataset.pick; pendingAlert = null; render(); }));
+    m.querySelectorAll('[data-alert]').forEach((b) => (b.onclick = () => { selStn = b.dataset.st; pendingAlert = alerts.find((a) => a.id === b.dataset.alert); render().then(() => $('#draftcard').scrollIntoView({ behavior: 'smooth' })); }));
+    $('#rf').onclick = async () => { await api('/api/models/refresh', {}); render(); };
+    $('#dr').onclick = async () => {
+      const t = new Date(); const onset = new Date(t.getTime() + 3600e3).toISOString().slice(0, 16) + 'Z', expires = new Date(t.getTime() + 25 * 3600e3).toISOString().slice(0, 16) + 'Z';
+      lastDraft = await api('/api/products', { headline: $('#hl').value, narrative: $('#nar').value, severity: $('#sev').value, certainty: $('#cer').value, rrExpected: Number($('#rr').value),
+        stations: [...$('#ar').selectedOptions].map((o) => o.value), onset, expires, evidence: { models: c.rr24, verification: ver.map((v) => ({ id: v.id, mae: v.mae, candidate: v.candidate })), observed: pendingAlert?.msg }, author: 'Duty forecaster', alert: pendingAlert?.id });
+      const rt = lastDraft.preview.routing;
+      $('#drout').innerHTML = `<div class="gate"><b>Draft ${lastDraft.id} · not issued</b><div style="margin-top:6px">Will reach ${rt.total} registered subscribers in ${rt.districts.join(', ')}${rt.advisories.length ? ' · planting advisory included' : ''}</div><pre class="code" style="margin:10px 0">${esc(lastDraft.preview.sms.en.join('\n'))}</pre>
+        <div class="field-row"><div style="flex:1"><label style="margin-top:0">Approving forecaster</label><input id="apb" value="Dr. Mensah, duty forecaster"></div><button class="btn pri" id="ap">Approve and issue</button></div></div>`;
+      $('#ap').onclick = async () => { await api('/api/products/approve', { id: lastDraft.id, officer: $('#apb').value }); pendingAlert = null; go('diss'); };
+    };
+  },
+  async diss() {
+    const ps = await api('/api/products');
+    m.innerHTML = ps.map((p) => { const b = p.body, r = b.rendered;
+      return `<div class="card"><h2>${esc(b.headline)} <span class="b ${p.state === 'issued' ? 'ok' : 'fl'}">${cap(p.state)}</span></h2>
+      <div class="sub" style="margin:-8px 0 16px">${p.id} · ${b.severity} · ${b.certainty}${p.state === 'issued' ? ` · approved by ${esc(p.approvedBy)} at ${t8(p.issued)}` : ''}</div>
+      ${p.state === 'issued' ? `<div class="chips">${p.issues.map((i) => `<div>${check}${CH[i.channel] || i.channel}<small>${t8(i.at).slice(0, 5)}</small></div>`).join('')}</div>
+      ${r.routing ? `<div class="cols even" style="margin-bottom:16px"><div><h2>Routed to ${r.routing.total} subscribers <span class="b nt">${r.routing.districts.join(', ')}</span></h2><table><tr><th>Who</th><th>Channel</th><th>Language</th><th>Count</th></tr>${r.routing.groups.map((g) => `<tr><td>${cap(g.sector)}</td><td>${g.channel.toUpperCase()}</td><td>${r.langNames?.[g.language] || g.language}${r.smsPending?.includes(g.language) ? ' <span class="b fl">pending</span>' : ''}</td><td>${g.n}</td></tr>`).join('')}</table></div>
+      <div><h2>Crop advisory</h2>${r.routing.advisories.length ? r.routing.advisories.map((a) => `<div class="gate" style="margin-top:0;margin-bottom:10px"><b>${esc(a.district)}</b><div>${esc(a.text)}</div></div>`).join('') + '<div class="sub">Crop calendar illustrative, pending CSIR-SARI and FAO calendars</div>' : '<div class="empty">No planting window open in these districts</div>'}</div></div>` : ''}
+      <div class="cols even"><div><h2>SMS <span class="b nt">${Object.keys(r.sms).map((l) => r.langNames?.[l] || l).join(' · ')}</span></h2><pre class="code">${esc(Object.entries(r.sms).map(([l, a]) => a.map((s) => `[${r.langNames?.[l] || l}${r.smsPending?.includes(l) ? ', translation pending, sent in English' : ''}] ${s}`).join('\n')).join('\n'))}</pre>
+      <h2 style="margin-top:16px">Social</h2><pre class="code">${esc(r.social)}</pre></div>
+      <div><h2>CAP 1.2 <span style="flex:1"></span><a class="btn" href="/data/products/${p.id}/alert.cap.xml" target="_blank">XML</a><a class="btn" href="/data/products/${p.id}/product.geojson" target="_blank">GeoJSON</a></h2><pre class="code">${esc(r.cap)}</pre></div></div>` : ''}</div>`; }).join('') || '<div class="card"><div class="empty">No products yet</div></div>';
+  },
+  async bus() {
+    const n = await api('/api/notifications');
+    m.innerHTML = `<div class="card"><table><tr><th>Time</th><th>Topic</th><th>Properties</th></tr>${n.map((x) => `<tr><td>${t8(x.properties.pubtime)}</td><td class="mono">${esc(x.topic.replace('origin/a/wis2/gh-gmet/data/core/weather/', '…/'))}</td><td class="mono">${esc(JSON.stringify(x.properties))}</td></tr>`).join('')}</table></div>`;
+  },
+};
+const render = () => views[tab]();
+render();
+</script>
+</body>
+</html>

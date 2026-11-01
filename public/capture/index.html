@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MetRelay Capture</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B1220">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#F4F6FA;--surface:#FFFFFF;--sunken:#EEF1F6;--ink:#0B1220;--ink-2:#475467;--ink-3:#98A2B3;--line:#E4E7EC;--line-2:#D0D5DD;
+  --primary:#1558D6;--primary-ink:#0E3F9E;--primary-soft:#EAF1FF;
+  --ok:#067647;--ok-bg:#E7F8EF;--pend:#1F4E9E;--pend-bg:#EAF1FF;--warn:#93470B;--warn-bg:#FFF4E0;--err:#B42318;--err-bg:#FEEFEE;
+  --note:#3D4FD6;--note-ink:#28339A;--note-bg:#EEF0FD;
+  --sans:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:16px/1.45 var(--sans);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased}
+
+/* ---------- Tablet frame (desktop / projector only) ---------- */
+.stage{min-height:100%}
+.device{height:100dvh}
+.screen{position:relative;height:100%;display:flex;flex-direction:column;background:var(--canvas);overflow:hidden;transform:translateZ(0)}
+.status,.cam{display:none}
+@media (min-width:900px) and (min-height:640px){
+  body{background:#DCE2EA}
+  .stage{display:grid;place-items:center;min-height:100dvh;padding:3vh 0}
+  .device{--h:min(92dvh,1080px);height:var(--h);width:calc(var(--h)*.74);background:#10151F;border-radius:48px;padding:20px;position:relative;
+    box-shadow:0 0 0 2px #2A3240,0 40px 80px -20px rgba(16,24,40,.45),0 12px 24px -8px rgba(16,24,40,.25)}
+  .cam{display:block;position:absolute;top:8px;left:50%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#2B3544;box-shadow:inset 0 0 0 2px #1B2230}
+  .screen{border-radius:30px}
+  .status{display:flex;align-items:center;justify-content:space-between;padding:10px 22px 4px;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface)}
+  .status .ic{display:flex;gap:8px;align-items:center}
+}
+.status svg{display:block}
+
+/* ---------- App chrome ---------- */
+.bar{display:flex;align-items:center;gap:12px;padding:14px 22px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-.02em}
+.brand i{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.stn{font-size:14px;color:var(--ink-2);font-weight:600}
+.sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding:6px 12px;border-radius:99px}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.on{color:var(--ok);background:var(--ok-bg)}.off{color:var(--warn);background:var(--warn-bg)}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+main{padding:22px;max-width:760px;margin:0 auto}
+
+/* ---------- Components ---------- */
+h1{font-size:26px;letter-spacing:-.025em;margin:0 0 18px;font-weight:800}
+h2{font-size:18px;letter-spacing:-.015em;margin:0 0 14px;font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.sec{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0 0 12px}
+label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-2);margin:0 0 6px}
+.field{position:relative;margin-bottom:14px}
+input,select{width:100%;font:inherit;font-size:18px;font-weight:600;padding:13px 14px;border:1.5px solid var(--line-2);border-radius:11px;background:var(--surface);color:var(--ink);appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23475467' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.inp{position:relative}.unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--ink-3);pointer-events:none}
+.has-unit input{padding-right:52px}
+.bad{border-color:var(--err)!important;background:var(--err-bg)!important}
+.errt{font-size:13px;color:var(--err);font-weight:600;margin-top:5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:0 14px}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1}
+button{font:inherit;font-weight:700;font-size:16px;padding:14px 18px;border-radius:12px;border:1.5px solid var(--line-2);background:var(--surface);color:var(--ink);cursor:pointer;min-height:54px}
+button.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+button.primary:active{background:var(--primary-ink)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--sunken);color:var(--ink-2)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.b-synced{color:var(--ok);background:var(--ok-bg)}.b-pending{color:var(--pend);background:var(--pend-bg)}.b-flagged{color:var(--note-ink);background:var(--note-bg)}.b-error{color:var(--err);background:var(--err-bg)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.stat span{font-size:13px;font-weight:600;color:var(--ink-2)}.stat b{display:block;font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-top:4px}
+.cta{width:100%;min-height:64px;font-size:18px;margin-bottom:12px}
+.hist{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid var(--line)}
+.hist:last-child{border-bottom:0}.hist .t{font-weight:700}.hist .s{font-size:13px;color:var(--ink-3)}
+.empty{color:var(--ink-3);font-weight:600;padding:8px 0}
+.derived{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.derived div{background:var(--sunken);border-radius:11px;padding:10px 12px}.derived small{display:block;font-size:12px;font-weight:600;color:var(--ink-2)}.derived b{font-size:20px;letter-spacing:-.01em}
+.synop{font:500 15px/1.6 var(--mono);background:var(--ink);color:#E6EDF7;border-radius:12px;padding:14px 16px;word-break:break-word;min-height:52px}
+.actions{position:sticky;bottom:0;background:linear-gradient(to top,var(--canvas) 70%,transparent);padding:14px 0 4px;display:flex;gap:12px}
+.actions button{flex:1}.actions .primary{flex:2}
+.head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}.head h1{margin:0}
+
+/* PIN / enrol */
+.auth{max-width:420px;margin:4vh auto 0;text-align:center}
+.logo{width:64px;height:64px;border-radius:18px;background:var(--ink);display:grid;place-items:center;margin:0 auto 18px}
+.dots{display:flex;gap:18px;justify-content:center;margin:26px 0 8px}.dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--line-2)}.dots i.f{background:var(--primary);border-color:var(--primary)}
+.pad{display:grid;grid-template-columns:repeat(3,78px);gap:18px;justify-content:center;margin:14px 0 18px}
+.pad button{width:78px;height:78px;border-radius:50%;background:var(--surface);border:1.5px solid var(--line);font-size:28px;font-weight:600;padding:0}
+.pad button.fn{font-size:14px;color:var(--ink-2);border-color:transparent;background:transparent}
+.pad button:active{background:var(--primary-soft);border-color:var(--primary)}
+.link{font-size:13px;color:var(--ink-3);text-decoration:none;font-weight:600}
+.auth .card{text-align:left}
+
+/* Validation prompt + toast (positioned inside the screen) */
+.scrim{position:fixed;inset:0;background:rgba(11,18,32,.72);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--surface);border-radius:26px 26px 0 0;width:100%;padding:12px 24px 28px;color:var(--ink);box-shadow:0 -18px 50px -20px rgba(11,18,32,.45)}
+.sheet:before{content:"";display:block;width:44px;height:5px;border-radius:99px;background:var(--line-2);margin:0 auto 20px}
+.sheet h2{font-size:22px;display:flex;gap:14px;align-items:center;margin:0 0 16px;letter-spacing:-.01em}
+.sheet h2 .ico{width:46px;height:46px;border-radius:14px;background:var(--note-bg);display:grid;place-items:center;flex:none}
+.sheet .val{display:flex;align-items:baseline;justify-content:space-between;gap:12px;background:var(--sunken);border-radius:14px;padding:14px 18px;margin:0 0 14px}
+.sheet .val span{font-weight:600;color:var(--ink-2)}.sheet .val b{font:600 28px/1.1 var(--mono);letter-spacing:-.02em;color:var(--note-ink)}.sheet .val small{font-size:17px;color:var(--ink-2);margin-left:4px}
+.sheet p{font-size:17px;line-height:1.5;margin:0 0 20px;color:var(--ink-2)}
+.sheet .alt{background:var(--surface);border-color:var(--line-2);color:var(--ink)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;font-size:15px;z-index:30;white-space:nowrap;box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+.banner{background:var(--err-bg);color:var(--err);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;font-weight:600;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner span{flex:1;min-width:200px}
+.slot{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
+.slot>div{flex:1}.slot span{font-size:13px;font-weight:600;color:var(--ink-2)}.slot b{display:block;font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.15}.slot small{color:var(--ink-3);font-weight:600;font-size:13px}
+.slot.now{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}.slot .primary{min-width:140px;min-height:60px;font-size:18px}
+.obs-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}.stepno{font-weight:700;color:var(--ink-2)}
+.prog{display:flex;gap:6px;margin-bottom:16px}.prog i{flex:1;height:6px;border-radius:99px;background:var(--line)}.prog i.done{background:var(--primary)}.prog i.cur{background:var(--primary);opacity:.45}
+.step-t{margin:0 0 16px}
+.field.wide{grid-column:1/-1}.frow{display:flex;gap:8px}.frow .inp{flex:1}
+.slash{min-width:54px;width:54px;padding:0;font-size:22px;font-weight:800;color:var(--ink-2)}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}.opts button{min-height:52px}.opts button.on,.days button.on,.reasons button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.opts .slash{width:auto}
+.days{display:flex;align-items:center;gap:8px;margin-top:10px}.days span{font-size:13px;font-weight:600;color:var(--ink-2);margin-right:4px}.days button{min-height:42px;min-width:48px;padding:0 12px}
+.missing{display:flex;align-items:center;gap:10px;background:var(--sunken);border:1.5px dashed var(--line-2);border-radius:11px;padding:10px 12px}.missing span{flex:1;font-weight:600}.missing b{font-size:20px;margin-right:6px}
+.opt{font-weight:500;color:var(--ink-3)}
+.reasons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.reasons button{min-height:56px;text-align:left}
+
+.rv{padding:4px 0 12px;border-bottom:1px solid var(--line)}.rv:last-child{border-bottom:0}.rv-h{display:flex;align-items:center;justify-content:space-between}.rv-h button{min-height:40px;padding:6px 10px}
+.rv-r{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:15px}.rv-r span{color:var(--ink-2)}.rv-r.miss b{color:var(--warn)}
+@media (max-width:520px){main{padding:16px}.bar{padding:12px 16px}.stn{display:none}}
+.brand em{font-style:normal;font-weight:600;color:var(--ink-3);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="stage"><div class="device"><span class="cam"></span>
+<div class="screen" id="screen">
+  <div class="status"><span id="clock">09:41</span><span class="ic" id="sig"></span></div>
+  <div class="bar"><span class="brand"><i><svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 0c4 6 7 9.5 7 12.5A7 7 0 0 1 1 12.5C1 9.5 4 6 8 0z" fill="#fff"/></svg></i>MetRelay<em>Capture</em></span><span id="stn" class="stn"></span><span class="sp"></span><span id="net" class="pill on">Online</span></div>
+  <div class="scroll" id="scroll"><main id="app"></main></div>
+</div></div></div>
+<script type="module">
+import * as core from '../core.js';
+const $ = (s) => document.querySelector(s);
+const app = $('#app'), scr = $('#screen');
+const hh = (h) => String(h).padStart(2, '0') + ':00';
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+// Clock. The observation time is always taken from here, never chosen by the observer.
+// Demo only: ?at=HH:MM shifts the clock for rehearsals; such observations are marked demoClock.
+const atQ = new URLSearchParams(location.search).get('at');
+if (atQ) sessionStorage.setItem('demoAt', atQ);
+let clockOffset = 0;
+const demoAt = sessionStorage.getItem('demoAt');
+if (demoAt && /^\d{1,2}:\d{2}$/.test(demoAt)) { const [H, M] = demoAt.split(':').map(Number); const d = new Date(); d.setUTCHours(H, M, 0, 0); clockOffset = d.getTime() - Date.now(); }
+const nowT = () => new Date(Date.now() + clockOffset);
+let homeTimer = null;
+// ---------- IndexedDB: device identity + append-only outbox ----------
+const idb = await new Promise((ok, no) => { const r = indexedDB.open('metcapture', 1); r.onupgradeneeded = () => { r.result.createObjectStore('kv'); r.result.createObjectStore('outbox', { keyPath: 'obs.id' }); }; r.onsuccess = () => ok(r.result); r.onerror = no; });
+const tx = (store, mode, fn) => new Promise((ok, no) => { const t = idb.transaction(store, mode); const r = fn(t.objectStore(store)); t.oncomplete = () => ok(r?.result); t.onerror = () => no(t.error); });
+const kvGet = (k) => tx('kv', 'readonly', (s) => s.get(k)); const kvSet = (k, v) => tx('kv', 'readwrite', (s) => s.put(v, k));
+const outbox = () => tx('outbox', 'readonly', (s) => s.getAll());
+let forcedOffline = (await kvGet('forcedOffline')) || false;
+const online = () => navigator.onLine && !forcedOffline;
+function paintNet() {
+  const n = $('#net'); n.textContent = online() ? 'Online' : 'No signal'; n.className = 'pill ' + (online() ? 'on' : 'off');
+  const bars = [4, 7, 10, 13].map((h, i) => `<rect x="${i * 4.5}" y="${13 - h}" width="3" height="${h}" rx="1" fill="${online() ? '#0B1220' : '#C4CAD4'}"/>`).join('');
+  $('#sig').innerHTML = `<svg width="18" height="13">${bars}</svg>${online() ? '<span>4G</span>' : '<span style="color:#98A2B3">No service</span>'}
+    <svg width="26" height="13" viewBox="0 0 26 13"><rect x=".5" y=".5" width="22" height="12" rx="3.5" fill="none" stroke="#0B1220" opacity=".4"/><rect x="2" y="2" width="15" height="9" rx="2" fill="#0B1220"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="#0B1220" opacity=".4"/></svg>`;
+}
+const tick = () => ($('#clock').textContent = nowT().toISOString().slice(11, 16) + (clockOffset ? ' demo' : '')); tick(); setInterval(tick, 15000);
+addEventListener('online', () => { paintNet(); sync(); }); addEventListener('offline', paintNet);
+const toast = (m) => { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; scr.append(t); setTimeout(() => t.remove(), 2600); };
+const api = (p, b) => fetch(p, b ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) } : {}).then((r) => r.json());
+const sha = async (s) => btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))));
+const logo = `<div class="logo"><svg width="26" height="30" viewBox="0 0 16 18"><path d="M8 0c4 6 7 9.5 7 12.5A7 7 0 0 1 1 12.5C1 9.5 4 6 8 0z" fill="#fff"/></svg></div>`;
+
+// ---------- Fields come from the shared core (same schedule the server enforces) ----------
+const F = core.FIELDS;
+
+// ---------- Screens ----------
+let me = await kvGet('identity'); let unlocked = false;
+async function screen() {
+  app.oninput = null; app.onclick = null; document.onkeydown = null; clearInterval(homeTimer);
+  paintNet();
+  $('#scroll').scrollTop = 0;
+  $('#stn').textContent = me ? `${me.station.name} · ${cap(me.station.tier)}` : '';
+  // Signing keys and offline mode need a secure origin (https:// or localhost).
+  if (!window.isSecureContext || !crypto.subtle) {
+    app.innerHTML = `<div class="auth">${logo}<h1>Secure connection needed</h1><div class="card"><p style="margin:0 0 10px">Open MetRelay Capture over <b>https://</b> or <b>localhost</b>.</p><p style="margin:0;color:var(--ink-2)">This address: <b>${location.origin}</b></p></div></div>`;
+    return;
+  }
+  if (!me) return enrol();
+  if (!unlocked) return pin();
+  home();
+}
+function enrol() {
+  app.innerHTML = `<div class="auth">${logo}<h1>Enrol this tablet</h1><div class="card">
+    <div class="field"><label>Username</label><input id="u" value="kofi.mensah" autocomplete="off"></div>
+    <div class="field"><label>Password</label><input id="p" type="password" value="1234"></div>
+    <div class="field"><label>Station</label><select id="s">${core.STATIONS.map((s) => `<option value="${s.id}">${s.name} · ${cap(s.tier)}</option>`).join('')}</select></div>
+    <div class="field"><label>New PIN</label><input id="pin" inputmode="numeric" maxlength="4" value="1234"></div>
+    <button class="primary" id="go" style="width:100%">Enrol</button><div id="e" class="errt"></div></div></div>`;
+  $('#go').onclick = async () => {
+    try {
+      const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
+      const jwk = await crypto.subtle.exportKey('jwk', kp.publicKey);
+      const r = await api('/api/enrol', { observer: $('#u').value, password: $('#p').value, station: $('#s').value, jwk });
+      if (r.error) return ($('#e').textContent = r.error);
+      me = { ...r, pinHash: await sha($('#pin').value + r.deviceId) };
+      await kvSet('identity', me); await kvSet('privateKey', kp.privateKey); await kvSet('unknownDevice', false);
+      for (const it of (await outbox()).filter((i) => !i.ack)) await tx('outbox', 'readwrite', (s) => s.put({ ...it, deviceId: me.deviceId, error: null, sig: null }));
+      await resignPending(); unlocked = true; screen(); sync();
+    } catch (e) { $('#e').textContent = 'Enrolment needs a connection. ' + e.message; }
+  };
+}
+// PIN pad per design guideline Screen 1: 3×3 digits + clear + backspace, four dots, no text field.
+function pin() {
+  let entered = '';
+  app.innerHTML = `<div class="auth">${logo}<h1 style="margin-bottom:8px">${me.station.name}</h1><span class="chip">${me.observer}</span>
+    <div class="dots" id="dots"></div><div class="errt" id="e" style="min-height:20px"></div>
+    <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<button data-d="${d}">${d}</button>`).join('')}<button data-a="clear" class="fn">Clear</button><button data-d="0">0</button><button data-a="back" class="fn" aria-label="Backspace"><svg width="24" height="18" viewBox="0 0 24 18"><path d="M8 1h14v16H8L1 9z" fill="none" stroke="#475467" stroke-width="2" stroke-linejoin="round"/><path d="M12 6l6 6m0-6l-6 6" stroke="#475467" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+    <a href="#" id="reenrol" class="link">Reset tablet</a></div>`;
+  const paintDots = () => ($('#dots').innerHTML = [0, 1, 2, 3].map((i) => `<i class="${i < entered.length ? 'f' : ''}"></i>`).join(''));
+  const press = async (k) => {
+    $('#e').textContent = '';
+    if (k === 'clear') entered = ''; else if (k === 'back') entered = entered.slice(0, -1); else if (entered.length < 4) entered += k;
+    paintDots();
+    if (entered.length === 4) {
+      if ((await sha(entered + me.deviceId)) === me.pinHash) { document.onkeydown = null; unlocked = true; screen(); }
+      else { entered = ''; paintDots(); $('#e').textContent = 'Incorrect PIN. Try again.'; }
+    }
+  };
+  app.querySelector('.pad').onclick = (e) => { const b = e.target.closest('button'); if (b) press(b.dataset.d ?? b.dataset.a); };
+  document.onkeydown = (e) => { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') press('back'); else if (e.key === 'Escape') press('clear'); };
+  $('#reenrol').onclick = (e) => { e.preventDefault(); if (confirm('Remove this tablet\'s enrolment? Unsent observations stay on the tablet.')) resetDevice(); };
+  paintDots();
+}
+async function resetDevice() { await kvSet('identity', null); await kvSet('privateKey', null); me = null; unlocked = false; document.onkeydown = null; screen(); }
+async function home() {
+  clearInterval(homeTimer); app.onclick = null; app.oninput = null;
+  const items = (await outbox()).sort((a, b) => b.obs.capturedAt.localeCompare(a.obs.capturedAt));
+  const pending = items.filter((i) => !i.ack).length;
+  const unknown = await kvGet('unknownDevice');
+  const { open, next } = core.slotAt(me.station.tier, nowT());
+  const done = (sl) => sl && items.some((i) => i.obs.date === sl.date && i.obs.hour === sl.hour);
+  const t5 = (iso) => iso.slice(11, 16);
+  const slotCard = open && !done(open)
+    ? `<div class="slot now"><div><span>Observation due</span><b>${hh(open.hour)} GMT</b><small>Open until ${t5(open.closes)}</small></div><button class="primary" id="new">Start</button></div>`
+    : `<div class="slot"><div><span>Next observation</span><b>${next ? hh(next.hour) + ' GMT' : ''}</b><small>${next ? 'Opens ' + t5(next.opens) : ''}${open ? ` · ${hh(open.hour)} submitted` : ''}</small></div><span class="badge ${open ? 'b-synced' : 'b-pending'}">${open ? '✓ ' + hh(open.hour) + ' done' : '◷ Waiting'}</span></div>`;
+  const tag = (o) => [o.qcDecisions?.some((d) => d.decision === 'confirmed') && '<span class="badge b-flagged">⚑ Confirmed</span>', o.qcDecisions?.some((d) => d.decision === 'corrected') && '<span class="badge b-synced">✓ Corrected</span>', o.missing && Object.keys(o.missing).length && `<span class="badge b-pending">/ ${Object.keys(o.missing).length} missing</span>`].filter(Boolean).join(' ');
+  app.innerHTML = `${unknown ? '<div class="banner"><span>HQ does not recognise this tablet. Observations are safe here.</span><button id="re">Re-enrol</button></div>' : ''}
+    ${slotCard}
+    <div class="stats"><div class="stat"><span>Waiting to send</span><b>${pending}</b></div><div class="stat"><span>Received by HQ</span><b>${items.length - pending}</b></div></div>
+    <div class="row" style="margin-bottom:16px"><button id="sync" ${online() ? '' : 'disabled'}>Send now</button><button id="off">${forcedOffline ? 'Go online' : 'Go offline'}</button><button id="lock" class="ghost">Lock</button></div>
+    <div class="card"><h2>History</h2>${items.map((i) => `<div class="hist"><div><div class="t">${i.obs.date.slice(8)}/${i.obs.date.slice(5, 7)} · ${hh(i.obs.hour)}</div>${tag(i.obs)}</div>
+    ${i.ack ? '<span class="badge b-synced">✓ Received by HQ</span>' : i.error ? `<span class="badge b-error">✕ ${i.error}</span>` : '<span class="badge b-pending">◷ On tablet</span>'}</div>`).join('') || '<div class="empty">No observations yet</div>'}</div>`;
+  if ($('#re')) $('#re').onclick = () => { me = null; unlocked = false; screen(); };
+  if ($('#new')) $('#new').onclick = () => entry(open);
+  $('#sync').onclick = () => sync(true); $('#lock').onclick = () => { unlocked = false; screen(); };
+  $('#off').onclick = async () => { forcedOffline = !forcedOffline; await kvSet('forcedOffline', forcedOffline); paintNet(); if (!forcedOffline) await sync(true); home(); };
+  // Re-check the schedule so the Start button appears when a window opens
+  homeTimer = setInterval(() => { const s2 = core.slotAt(me.station.tier, nowT()); if (s2.open?.at !== open?.at) home(); }, 20000);
+}
+
+// ---------- Stepped observation form ----------
+let draft = null;
+async function entry(slot) {
+  const st = me.station;
+  let ctx = {};
+  if (online()) { ctx = await api(`/api/qc-context?station=${st.id}&date=${slot.date}&hour=${slot.hour}`).catch(() => ({})); kvSet('ctx', ctx); if (ctx.climYear) kvSet('climYear', ctx.climYear); }
+  else { ctx = (await kvGet('ctx')) || {}; const cy = await kvGet('climYear'); if (cy) ctx.clim = cy[Number(slot.date.slice(5, 7))]; ctx.refT = undefined; ctx.neighbours = []; }
+  // Dry bulbs this tablet recorded in the last 24 h, the local truth for the max and min check
+  const t0 = Date.parse(slot.at);
+  const own = (await outbox()).map((i) => i.obs).filter((o) => typeof o.T === 'number').map((o) => ({ t: Date.parse(`${o.date}T${String(o.hour).padStart(2, '0')}:00:00Z`), hour: o.hour, T: o.T })).filter((x) => x.t < t0 && x.t >= t0 - 864e5);
+  ctx.dayT = [...(ctx.dayT || []), ...own.map(({ hour, T }) => ({ hour, T }))];
+  const keys = core.fieldsDue(st.tier, slot.hour);
+  const steps = core.SECTIONS.map((sec) => ({ ...sec, keys: keys.filter((k) => F[k].sec === sec.id) })).filter((sec) => sec.keys.length);
+  steps.push({ id: 'review', l: 'Review', keys: [] });
+  draft = { slot, ctx, steps, step: 0, obs: { station: st.id, date: slot.date, hour: slot.hour }, missing: {}, decisions: [], pending: null, startedAt: nowT().toISOString() };
+  renderStep();
+}
+const parseVal = (k, raw) => {
+  const v = String(raw ?? '').trim().replace(',', '.');
+  if (v === '') return undefined;
+  if (k === 'rr' && /^tr$/i.test(v)) return 'TR';
+  const n = Number(v); return Number.isFinite(n) ? n : NaN;
+};
+const fmtVal = (k) => { const o = draft.obs, m = draft.missing[k]; if (m) return `/ ${m.reason}`; if (k === 'layers') return o.layers?.length ? o.layers.map((L) => `${L.Ns} okta, type ${L.C}, ${L.h_m} m`).join('; ') : 'None'; const v = o[k]; return v === undefined ? '' : `${v}${F[k].u ? ' ' + F[k].u : ''}${k === 'rr' && o.rrDays > 1 ? ` over ${o.rrDays} days` : ''}`; };
+function fieldHtml(k) {
+  const f = F[k], o = draft.obs, m = draft.missing[k];
+  if (m) return `<div class="field wide"><label>${f.l}</label><div class="missing"><span><b>/</b> Missing · ${m.reason}${m.note ? ', ' + m.note : ''}</span><button class="ghost" data-undo="${k}">Undo</button></div></div>`;
+  if (f.layer) return `<div class="field wide"><label>${f.l} <span class="opt">optional</span></label><div class="row"><input data-L="Ns" inputmode="numeric" placeholder="Amount, okta" value="${o.layers?.[0]?.Ns ?? ''}"><input data-L="C" inputmode="numeric" placeholder="Type 0 to 9" value="${o.layers?.[0]?.C ?? ''}"><div class="inp"><input data-L="h_m" inputmode="numeric" placeholder="Height" value="${o.layers?.[0]?.h_m ?? ''}"><span class="unit">m</span></div></div></div>`;
+  const slash = f.optional ? '' : `<button class="slash" data-miss="${k}" aria-label="Report ${f.l} missing">/</button>`;
+  if (f.sel) return `<div class="field wide"><label>${f.l}</label><div class="opts">${f.sel.map((x) => `<button data-sel="${k}" data-v="${x}" class="${o[k] === x ? 'on' : ''}">${x === 'CALM' ? 'Calm' : x}</button>`).join('')}${slash}</div><div class="errt" id="e_${k}"></div></div>`;
+  const days = k === 'rr' && draft.slot.hour === 9 && me.station.tier !== 'synoptic'
+    ? `<div class="days"><span>Days covered</span>${[1, 2, 3].map((n) => `<button data-days="${n}" class="${(o.rrDays || 1) === n ? 'on' : ''}">${n}</button>`).join('')}</div>` : '';
+  const val = o[k] === undefined ? '' : Number.isNaN(o[k]) ? draft.raw?.[k] ?? '' : o[k];
+  return `<div class="field"><label>${f.l}${f.optional ? ' <span class="opt">optional</span>' : ''}</label><div class="frow"><div class="inp"><input data-k="${k}" inputmode="decimal" autocomplete="off" value="${val}" ${f.ph ? `placeholder="${f.ph}"` : ''}>${f.u ? `<span class="unit">${f.u}</span>` : ''}</div>${slash}</div>${days}<div class="errt" id="e_${k}"></div></div>`;
+}
+function stepState() {
+  const st = draft.steps[draft.step], o = draft.obs;
+  const keys = st.keys.filter((k) => core.applies(k, o));
+  const r = core.qc(o, draft.ctx);
+  const bad = keys.filter((k) => Number.isNaN(o[k]));
+  const hard = r.hard.filter((h) => keys.includes(h.field));
+  const empty = keys.filter((k) => !F[k].optional && !draft.missing[k] && o[k] === undefined);
+  return { keys, r, bad, hard, empty, ready: !bad.length && !hard.length && !empty.length };
+}
+function renderStep() {
+  const st = draft.steps[draft.step], n = draft.steps.length, o = draft.obs;
+  const prog = draft.steps.map((x, i) => `<i class="${i < draft.step ? 'done' : i === draft.step ? 'cur' : ''}"></i>`).join('');
+  const head = `<div class="obs-head"><div><span class="chip">${hh(draft.slot.hour)} GMT · ${draft.slot.date.slice(8)}/${draft.slot.date.slice(5, 7)}</span></div><span class="sp"></span><span class="stepno">${draft.step + 1} / ${n}</span></div>
+    <div class="prog">${prog}</div><h1 class="step-t">${st.l}</h1>`;
+  if (st.id === 'review') return renderReview(head);
+  const keys = st.keys.filter((k) => core.applies(k, o));
+  app.innerHTML = `${head}<div class="card"><div class="grid">${keys.map(fieldHtml).join('')}</div></div>
+    ${st.id === 'temp' ? '<div class="card" id="dercard"><div class="sec">Computed</div><div class="derived" id="der"></div></div>' : ''}
+    <div class="actions"><button id="back">${draft.step ? 'Back' : 'Cancel'}</button><button class="primary" id="next">Next</button></div>`;
+  wireStep();
+}
+function paintStep() {
+  const s = stepState();
+  app.querySelectorAll('.errt').forEach((e) => (e.textContent = '')); app.querySelectorAll('.bad').forEach((e) => e.classList.remove('bad'));
+  for (const k of s.bad) { const el = $(`#e_${k}`); if (el) el.textContent = 'Enter a number, or / if missing'; $(`[data-k=${k}]`)?.classList.add('bad'); }
+  for (const e of s.hard) { const el = $(`#e_${e.field}`); if (el) el.textContent = e.msg; $(`[data-k=${e.field}]`)?.classList.add('bad'); }
+  if ($('#der')) { const d = core.derive(draft.obs, me.station); $('#dercard').style.display = d.RH != null ? '' : 'none'; $('#der').innerHTML = d.RH != null ? `<div><small>Rel. humidity</small><b>${d.RH} %</b></div><div><small>Dew point</small><b>${d.Td} °C</b></div><div><small>Vapour pressure</small><b>${d.VP} hPa</b></div>` : ''; }
+  $('#next').disabled = !s.ready;
+  return s;
+}
+function wireStep() {
+  const o = draft.obs; draft.raw = draft.raw || {};
+  app.oninput = (e) => {
+    const el = e.target;
+    if (el.dataset.k) {
+      const k = el.dataset.k;
+      if (el.value.includes('/')) { el.value = el.value.replace('/', ''); return askMissing(k); }
+      draft.raw[k] = el.value; o[k] = parseVal(k, el.value);
+      if (o[k] === undefined) delete o[k];
+    }
+    if (el.dataset.L) {
+      const L = { Ns: $('[data-L=Ns]').value, C: $('[data-L=C]').value, h_m: $('[data-L=h_m]').value };
+      o.layers = L.Ns && L.C && L.h_m ? [{ Ns: Number(L.Ns), C: Number(L.C), h_m: Number(L.h_m) }] : undefined;
+    }
+    paintStep();
+  };
+  app.onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.sel) { o[b.dataset.sel] = b.dataset.v; renderStep(); return; }
+    if (b.dataset.miss) return askMissing(b.dataset.miss);
+    if (b.dataset.undo) { delete draft.missing[b.dataset.undo]; renderStep(); return; }
+    if (b.dataset.days) { o.rrDays = Number(b.dataset.days); if (o.rrDays === 1) delete o.rrDays; renderStep(); return; }
+    if (b.id === 'back') { if (draft.step) { draft.step--; renderStep(); } else home(); return; }
+    if (b.id === 'next') return nextStep();
+  };
+  paintStep();
+  app.querySelector('[data-k]')?.focus();
+}
+// Soft checks are raised at the step where the reading was made, while the observer is at the instrument.
+function nextStep() {
+  const s = paintStep(); if (!s.ready) return;
+  const o = draft.obs;
+  if (draft.pending && s.keys.includes(draft.pending.field)) {
+    const p = draft.pending; draft.pending = null;
+    if (o[p.field] !== p.value) draft.decisions.push({ field: p.field, kind: p.kind, msg: p.msg, decision: 'corrected', from: p.value, to: o[p.field], at: nowT().toISOString() });
+  }
+  const decided = (x) => draft.decisions.some((d) => d.field === x.field && d.kind === x.kind && d.decision === 'confirmed' && d.value === o[x.field]);
+  const soft = s.r.soft.filter((x) => s.keys.includes(x.field) && !decided(x));
+  if (soft.length) return check(soft[0]);
+  draft.step++; renderStep();
+}
+function check(item) {
+  const sh = document.createElement('div'); sh.className = 'scrim';
+  const f = F[item.field] || { l: item.field };
+  sh.innerHTML = `<div class="sheet"><h2><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D4FD6" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.2-4.2"/></svg></span>Check this reading</h2>
+    <div class="val"><span>${f.l}</span><b>${draft.obs[item.field]}${f.u ? `<small>${f.u}</small>` : ''}</b></div><p>${item.msg}</p>
+    <div class="row"><button class="primary" id="re">Re-check instrument</button><button id="ok" class="alt">Reading is correct</button></div></div>`;
+  scr.append(sh);
+  sh.querySelector('#re').onclick = () => { sh.remove(); draft.pending = { ...item, value: draft.obs[item.field] }; const el = $(`[data-k=${item.field}]`); el?.focus(); el?.select(); };
+  sh.querySelector('#ok').onclick = () => { sh.remove(); draft.decisions.push({ field: item.field, kind: item.kind, msg: item.msg, decision: 'confirmed', value: draft.obs[item.field], at: nowT().toISOString() }); nextStep(); };
+}
+function askMissing(k) {
+  let pick = null;
+  const sh = document.createElement('div'); sh.className = 'scrim';
+  sh.innerHTML = `<div class="sheet plain"><h2>Why is ${F[k].l.toLowerCase()} missing?</h2><div class="reasons">${core.MISSING_REASONS.map((r) => `<button data-r="${r}">${r}</button>`).join('')}</div>
+    <input id="note" placeholder="Details" style="display:none;margin-bottom:14px"><div class="row"><button id="cx">Cancel</button><button class="primary" id="sv" disabled>Save as missing</button></div></div>`;
+  scr.append(sh);
+  sh.querySelector('.reasons').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; pick = b.dataset.r; sh.querySelectorAll('.reasons button').forEach((x) => x.classList.toggle('on', x === b)); sh.querySelector('#note').style.display = pick === 'Other' ? '' : 'none'; sh.querySelector('#sv').disabled = false; };
+  sh.querySelector('#cx').onclick = () => sh.remove();
+  sh.querySelector('#sv').onclick = () => {
+    const note = sh.querySelector('#note').value.trim();
+    if (pick === 'Other' && !note) { sh.querySelector('#note').focus(); return; }
+    draft.missing[k] = { reason: pick, ...(note ? { note } : {}) }; delete draft.obs[k]; sh.remove(); renderStep();
+  };
+}
+function renderReview(head) {
+  const o = draft.obs, st = me.station;
+  const full = { ...o, missing: Object.keys(draft.missing).length ? draft.missing : undefined };
+  const gaps = core.incomplete(full, st), d = core.derive(o, st);
+  const groups = draft.steps.filter((x) => x.id !== 'review').map((x, i) => `<div class="rv"><div class="rv-h"><b>${x.l}</b><button class="ghost" data-go="${i}">Edit</button></div>
+    ${x.keys.filter((k) => core.applies(k, o)).map((k) => `<div class="rv-r ${draft.missing[k] ? 'miss' : ''}"><span>${F[k].l}</span><b>${fmtVal(k) || '<i>empty</i>'}</b></div>`).join('')}</div>`).join('');
+  const syn = st.tier === 'synoptic' ? `<div class="card"><div class="sec">SYNOP</div><div class="synop">${core.encodeSynop(full, st)}</div></div>` : '';
+  const dec = draft.decisions.length ? `<div class="card"><div class="sec">Checks</div>${draft.decisions.map((x) => `<div class="rv-r"><span>${F[x.field]?.l || x.field}</span><b>${x.decision === 'confirmed' ? '⚑ Confirmed as read' : `✓ Corrected ${x.from} to ${x.to}`}</b></div>`).join('')}</div>` : '';
+  app.innerHTML = `${head}<div class="card">${groups}</div>
+    ${d.RH != null ? `<div class="card"><div class="sec">Computed</div><div class="derived"><div><small>Rel. humidity</small><b>${d.RH} %</b></div><div><small>Dew point</small><b>${d.Td} °C</b></div><div><small>Vapour pressure</small><b>${d.VP} hPa</b></div>${d.mslp != null ? `<div><small>MSL pressure</small><b>${d.mslp} hPa</b></div>` : ''}</div></div>` : ''}
+    ${syn}${dec}
+    ${gaps.length ? `<div class="banner"><span>Still needed: ${gaps.map((k) => F[k].l).join(', ')}</span></div>` : ''}
+    <div class="actions"><button id="back">Back</button><button class="primary" id="submit" ${gaps.length ? 'disabled' : ''}>Submit observation</button></div>`;
+  app.onclick = (e) => { const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.go) { draft.step = Number(b.dataset.go); renderStep(); }
+    if (b.id === 'back') { draft.step--; renderStep(); }
+    if (b.id === 'submit' && !gaps.length) commit(full, d, draft.decisions); };
+  app.oninput = null;
+}
+async function commit(o, d, qcDecisions) {
+  const obs = { ...o, id: crypto.randomUUID(), derived: d, qcDecisions, capturedAt: draft.startedAt, savedAt: nowT().toISOString(), coreVersion: core.CORE_VERSION, ...(clockOffset ? { demoClock: true } : {}) };
+  for (const k of Object.keys(obs)) if (obs[k] === undefined) delete obs[k];
+  const key = await kvGet('privateKey');
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(core.canonical(obs))));
+  await tx('outbox', 'readwrite', (s) => s.put({ obs, deviceId: me.deviceId, sig: btoa(String.fromCharCode(...sig)), ack: false }));
+  draft = null; app.onclick = null;
+  toast(online() ? 'Saved. Sending to HQ' : 'Saved on tablet');
+  await sync(); home();
+}
+async function resignPending() {
+  const key = await kvGet('privateKey');
+  for (const it of (await outbox()).filter((i) => !i.ack && !i.sig)) {
+    const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(core.canonical(it.obs))));
+    await tx('outbox', 'readwrite', (s) => s.put({ ...it, sig: btoa(String.fromCharCode(...sig)) }));
+  }
+}
+async function sync(manual) {
+  if (!online() || !me) return;
+  const pend = (await outbox()).filter((i) => !i.ack && i.sig);
+  if (!pend.length) { if (manual) toast('Nothing waiting'); return; }
+  try {
+    const r = await api('/api/sync', { items: pend.map(({ obs, deviceId, sig }) => ({ obs, deviceId, sig })) });
+    await kvSet('unknownDevice', r.acks.some((a) => a.why === 'unknown device'));
+    for (const a of r.acks) { const it = pend.find((p) => p.obs.id === a.id); await tx('outbox', 'readwrite', (s) => s.put({ ...it, ack: a.ack, ackAt: new Date().toISOString(), error: a.ack ? null : a.why })); }
+    const n = r.acks.filter((a) => a.ack).length;
+    toast(n ? `${n} received by HQ` : 'Not accepted by HQ');
+  } catch { toast('HQ unreachable. Kept on tablet'); }
+  if (unlocked) home();
+}
+setInterval(() => sync(), 20000);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+screen();
+</script>
+</body>
+</html>

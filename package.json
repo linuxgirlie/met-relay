@@ -1,0 +1,14 @@
+{
+  "name": "gmet-observation-to-action-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "NGDA 2026 Challenge 4 (GMet/DMI): whole-chain MVP. Zero dependencies, Node >= 22.",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node --no-warnings server.mjs",
+    "seed": "node --no-warnings seed.mjs",
+    "test": "node test/golden.mjs",
+    "reset": "rm -rf data && echo data cleared"
+  }
+}
